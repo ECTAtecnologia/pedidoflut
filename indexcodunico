@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Pedidos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/vanilla-masker@1.1.1/build/vanilla-masker.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/promise-polyfill@8/dist/polyfill.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/whatwg-fetch@3.6.2/dist/fetch.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/core-js-bundle@3.26.1/minified.js"></script>
+    <script src="rawbt.min.js"></script>
+
+    <style>
+        .establishment-header-caixa {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .floating-button-caixa {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            border-radius: 25px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .floating-button-caixa:hover {
+            background-color: #45a049;
+        }
+
+        .modal-caixa {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal-content-caixa {
+            background-color: #f5f5f5;
+            padding: 10px;
+            width: 100%;
+            max-width: 400px;
+            margin: 20px auto;
+            position: relative;
+            border-radius: 8px;
+        }
+
+        .close-button-caixa {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            background: none;
+            border: none;
+            padding: 0 5px;
+            line-height: 1;
+        }
+
+        .close-button-caixa:hover {
+            color: #333;
+        }
+
+        .establishment-section-caixa {
+            text-align: left;
+            margin-bottom: 10px;
+            padding: 3px 0;
+            margin-top: 20px;
+        }
+
+        .establishment-section-caixa h3 {
+            font-size: 14px;
+            margin: 0;
+            color: #333;
+        }
+
+        .btn-alterar-caixa {
+            width: 100%;
+            padding: 6px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            margin-top: 6px;
+            font-size: 12px;
+        }
+
+        .pedido-container-caixa {
+            padding: 5px 0;
+        }
+
+        .pedido-container-caixa h2 {
+            text-align: center;
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .form-group-caixa {
+            margin-bottom: 8px;
+        }
+
+        .form-group-caixa label {
+            display: block;
+            margin-bottom: 2px;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .form-control-caixa {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            height: 30px;
+        }
+
+        .form-control-caixa:not(:placeholder-shown) {
+            font-size: 12px;
+        }
+
+        .form-control-caixa::placeholder {
+            font-size: 12px;
+        }
+
+        select.form-control-caixa option {
+            font-size: 12px;
+        }
+
+        select.form-control-caixa {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 6px center;
+            background-size: 14px;
+            padding-right: 25px;
+        }
+
+        .btn-imprimir-caixa {
+            width: 100%;
+            padding: 8px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        textarea.form-control-caixa {
+            min-height: 45px;
+            height: auto;
+            resize: vertical;
+        }
+
+        @media (max-width: 768px) {
+            .modal-content-caixa {
+                margin: 0;
+                min-height: 100vh;
+                border-radius: 0;
+            }
+            
+            .form-control-caixa {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="floating-button-caixa" onclick="openModal()">Lançar Pedido</button>
+
+    <div id="pedidoModal" class="modal-caixa">
+        <div class="modal-content-caixa">
+            <button class="close-button-caixa" onclick="closeModal()">×</button>
+            
+            <div class="establishment-section-caixa">
+                <h3>Estabelecimento: <span id="establishment-display">Não definido</span></h3>
+                <button onclick="resetEstablishmentName()" class="btn-alterar-caixa">Alterar</button>
+            </div>
+
+            <div id="establishment-form" class="container mt-4" style="display: none;">
+                <div class="mb-3">
+                    <label for="establishment-name" class="form-label">Nome do Estabelecimento</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control-caixa" id="establishment-name" placeholder="Digite o nome do estabelecimento">
+                        <button onclick="saveEstablishmentName()" class="btn-alterar-caixa">Salvar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pedido-container-caixa">
+                <h2>Pedido do Cliente</h2>
+                <form id="pedidoForm">
+                    <div class="form-group-caixa">
+                        <label for="nome">Nome do Cliente:</label>
+                        <input type="text" class="form-control-caixa" id="nome" required>
+                    </div>
+                    
+                    <div class="form-group-caixa">
+                        <label for="telefone">Telefone:</label>
+                        <input type="text" class="form-control-caixa" id="telefone">
+                    </div>
+                    
+                    <div class="form-group-caixa">
+                        <label for="produtos">Produtos:</label>
+                        <textarea class="form-control-caixa" id="produtos" rows="3" required></textarea>
+                    </div>
+                    
+                    <div class="form-group-caixa">
+                        <label for="pagamento">Forma de Pagamento:</label>
+                        <select class="form-control-caixa" id="pagamento" required>
+                            <option value="">Selecione</option>
+                            <option value="Dinheiro">Dinheiro</option>
+                            <option value="Cartão de Crédito">Cartão de Crédito</option>
+                            <option value="Cartão de Débito">Cartão de Débito</option>
+                            <option value="PIX">PIX</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group-caixa">
+                        <label for="endereco">Endereço:</label>
+                        <textarea class="form-control-caixa" id="endereco" required></textarea>
+                    </div>
+                    
+                    <div class="form-group-caixa">
+                        <label for="valor">Valor Total:</label>
+                        <input type="text" 
+                               class="form-control-caixa" 
+                               id="valor" 
+                               inputmode="numeric"
+                               placeholder="R$ 0,00"
+                               required>
+                    </div>
+                    
+                    <button type="button" class="btn-imprimir-caixa" onclick="imprimirPedido()">Imprimir Pedido</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            var telefoneInput = document.getElementById('telefone');
+            VMasker(telefoneInput).maskPattern('(99) 99999-9999');
+
+            var valorInput = document.getElementById('valor');
+            VMasker(valorInput).maskMoney({
+                precision: 2,
+                separator: ',',
+                delimiter: '.',
+                unit: 'R$ ',
+                zeroCents: true
+            });
+
+            // Carrega o nome do estabelecimento se existir
+            const savedName = localStorage.getItem('establishmentName');
+            if (savedName) {
+                document.getElementById('establishment-display').textContent = savedName;
+                document.getElementById('establishment-form').style.display = 'none';
+            } else {
+                document.getElementById('establishment-display').textContent = 'Não definido';
+                document.getElementById('establishment-form').style.display = 'block';
+            }
+        }
+
+        function openModal() {
+            const modal = document.getElementById('pedidoModal');
+            if (modal) {
+                modal.style.display = 'block';
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('pedidoModal');
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('pedidoModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        function saveEstablishmentName() {
+            const input = document.getElementById('establishment-name');
+            const name = input.value.trim();
+            
+            if (name) {
+                localStorage.setItem('establishmentName', name);
+                document.getElementById('establishment-display').textContent = name;
+                document.getElementById('establishment-form').style.display = 'none';
+            } else {
+                alert('Por favor, digite um nome válido');
+            }
+        }
+
+        function resetEstablishmentName() {
+            localStorage.removeItem('establishmentName');
+            document.getElementById('establishment-display').textContent = 'Não definido';
+            document.getElementById('establishment-form').style.display = 'block';
+            document.getElementById('establishment-name').value = '';
+            document.getElementById('establishment-name').focus();
+        }
+
+        function imprimirPedido() {
+            const nome = document.getElementById('nome').value;
+            const telefone = document.getElementById('telefone').value;
+            const produtos = document.getElementById('produtos').value;
+            const pagamento = document.getElementById('pagamento').value;
+            const endereco = document.getElementById('endereco').value;
+            const valor = document.getElementById('valor').value;
+            const estabelecimento = localStorage.getItem('establishmentName') || 'Estabelecimento';
+
+            if (!nome || !produtos || !pagamento || !endereco || !valor) {
+                alert('Por favor, preencha todos os campos obrigatórios');
+                return;
+            }
+
+            try {
+                const textoImpressao = 
+                    '//print?text=' +
+                    estabelecimento + '\r\n' +
+                    '\r\n' +
+                    'PEDIDO' + '\r\n' +
+                    '===================' + '\r\n' +
+                    '\r\n' +
+                    'Nome: ' + nome + '\r\n' +
+                    'Telefone: ' + telefone + '\r\n' +
+                    '\r\n' +
+                    'Produtos:' + '\r\n' + 
+                    produtos + '\r\n' +
+                    '\r\n' +
+                    'Forma de Pagamento: ' + pagamento + '\r\n' +
+                    'Endereco: ' + endereco + '\r\n' +
+                    'Valor Total: R$ ' + valor + '\r\n' +
+                    '\r\n' +
+                    '===================' + '\r\n';
+
+                const textoCodeado = encodeURIComponent(textoImpressao);
+
+                if (typeof window.Android !== 'undefined') {
+                    window.Android.print(textoImpressao);
+                    enviarEmail();
+                } else {
+                    window.location.href = `rawbt:${textoCodeado}`;
+                    setTimeout(enviarEmail, 1000);
+                }
+
+            } catch (error) {
+                console.error("Erro:", error);
+                alert('Erro ao tentar imprimir. Verifique se o RawBT está instalado e configurado corretamente.');
+            }
+        }
+
+        function enviarEmail() {
+            const nome = document.getElementById('nome').value;
+            const telefone = document.getElementById('telefone').value;
+            const produtos = document.getElementById('produtos').value;
+            const pagamento = document.getElementById('pagamento').value;
+            const endereco = document.getElementById('endereco').value;
+            const valor = document.getElementById('valor').value;
+            const estabelecimento = localStorage.getItem('establishmentName') || 'Estabelecimento';
+
+            const mensagemEmail = `
+Novo pedido registrado:
+
+Estabelecimento: ${estabelecimento}
+Nome do Cliente: ${nome}
+Telefone: ${telefone}
+Produtos: ${produtos}
+Forma de Pagamento: ${pagamento}
+Endereço: ${endereco}
+Valor Total: ${valor}
+Data: ${new Date().toLocaleString()}
+            `;
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', `https://portal.ecta.com.br/gerenciamento/EnviarEmailEcta?Assunto=PEDIDO CAIXA CELULAR&Mensagem=${encodeURIComponent(mensagemEmail)}`, true);
+            
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    console.log("Email enviado com sucesso");
+                    limparFormulario();
+                } else {
+                    console.error("Erro ao enviar email");
+                    limparFormulario();
+                }
+            };
+            
+            xhr.onerror = function() {
+                console.error("Erro ao enviar email");
+                limparFormulario();
+            };
+            
+            xhr.send();
+        }
+
+        function limparFormulario() {
+            document.getElementById('nome').value = '';
+            document.getElementById('telefone').value = '';
+            document.getElementById('produtos').value = '';
+            document.getElementById('pagamento').value = '';
+            document.getElementById('endereco').value = '';
+            document.getElementById('valor').value = '';
+            document.getElementById('nome').focus();
+            closeModal();
+        }
+    </script>
+</body>
+</html>

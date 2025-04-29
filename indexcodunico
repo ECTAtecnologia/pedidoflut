@@ -270,14 +270,22 @@
                 zeroCents: true
             });
 
-            // Carrega o nome do estabelecimento se existir
+            // Carrega o nome do estabelecimento imediatamente
+            carregarNomeEstabelecimento();
+        }
+
+        // Nova função para carregar o nome do estabelecimento
+        function carregarNomeEstabelecimento() {
             const savedName = localStorage.getItem('establishmentName');
-            if (savedName) {
-                document.getElementById('establishment-display').textContent = savedName;
-                document.getElementById('establishment-form').style.display = 'none';
+            const displayElement = document.getElementById('establishment-display');
+            const formElement = document.getElementById('establishment-form');
+            
+            if (savedName && savedName.trim() !== '') {
+                displayElement.textContent = savedName;
+                formElement.style.display = 'none';
             } else {
-                document.getElementById('establishment-display').textContent = 'Não definido';
-                document.getElementById('establishment-form').style.display = 'block';
+                displayElement.textContent = 'Não definido';
+                formElement.style.display = 'block';
             }
         }
 
@@ -309,8 +317,14 @@
             const name = input.value.trim();
             
             if (name) {
+                // Salva no localStorage
                 localStorage.setItem('establishmentName', name);
+                
+                // Atualiza a exibição
                 document.getElementById('establishment-display').textContent = name;
+                document.getElementById('establishment-form').style.display = 'none';
+                
+                // Fecha o formulário
                 document.getElementById('establishment-form').style.display = 'none';
             } else {
                 alert('Por favor, digite um nome válido');
@@ -318,8 +332,6 @@
         }
 
         function resetEstablishmentName() {
-            localStorage.removeItem('establishmentName');
-            document.getElementById('establishment-display').textContent = 'Não definido';
             document.getElementById('establishment-form').style.display = 'block';
             document.getElementById('establishment-name').value = '';
             document.getElementById('establishment-name').focus();
